@@ -30,7 +30,7 @@ class FileManagerDialog(Dialog):
             xlabel, FILE MANAGER, 0, 0
             label, assignment for python course, 0, 0
             label, used: tkinter, 0, 0 
-            label, date: XX.11.2024, 0, 0
+            label, date: 29.11.2024, 0, 0
             urlbutton, https://github.com/abrosimov-d/task16, 0, 0
 '''
         super().template(template)
