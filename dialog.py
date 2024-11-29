@@ -3,7 +3,7 @@ from tkinter import ttk
 from webbrowser import open
 
 class Dialog():
-    def __init__(self):
+    def __init__(self, parent):
         self.WIDTH = 40
         self.BG = '#13222e'
         self.BG3 = '#1a1c23'
@@ -13,7 +13,7 @@ class Dialog():
 
         self.SIZES = [
             {'name': 'S', 'WIDTH': 40, 'geometry': '600x160'},
-            {'name': 'L', 'WIDTH': 25, 'geometry': '400x200'},
+            {'name': 'L', 'WIDTH': 40, 'geometry': '600x250'},
             {'name': 'XL', 'WIDTH': 25, 'geometry': '400x400'},
             {'name': 'XXL', 'WIDTH': 40, 'geometry': '800x650'},
             {'name': 'XXXL', 'WIDTH': 60, 'geometry': '1400x800'},
@@ -24,7 +24,11 @@ class Dialog():
         self.BIGFONT = (self.FF, 22, 'bold')
         self.SMALLFONT = (self.FF, 12, 'bold')
         self.XXLFONT = (self.FF, 32, 'bold')
-        self.root = tk.Tk()
+        if parent == None:
+            self.root = tk.Tk()
+        else:
+            self.root = tk.Toplevel(parent.root)
+            self.root.grab_set() 
         self.root.geometry('100x100')
         self.root.option_add("*Font", self.FONT) 
         self.root.config(bg=self.BG)
@@ -59,8 +63,11 @@ class Dialog():
                     for size in self.SIZES:
                         if element['text'] == size['name']:
                             self.WIDTH = size['WIDTH']
-                            self.root.geometry(size['geometry'])
-                    
+                            self.root.geometry(f'{size['geometry']}')
+                            self.root.update_idletasks()
+                            x = (self.root.winfo_screenwidth() - self.root.winfo_width()) // 2 
+                            y = (self.root.winfo_screenheight() - self.root.winfo_height()) // 2
+                            self.root.geometry(f'{size['geometry']}+{x}+{y}') 
                 case 'button':
                     element['object'] = tk.Button(self.frame, text=element['text'], width=self.WIDTH, command=lambda id=element['id']:self.on_event_click(id), bg=self.BG3, fg=self.FG, relief="flat", bd=0, cursor='hand2')
                     element['object'] .bind("<Enter>", self.on_enter) 
@@ -76,7 +83,7 @@ class Dialog():
                     element['object'] = tk.Entry(self.frame, text=element['text'], width=self.WIDTH, bg=self.BG2, fg=self.FG, relief="flat", bd=0, show='*')
                     element['object'].bind("<KeyRelease>", lambda key, id=element['id']: self.on_event_key(key, id))
                 case 'separator':
-                    element['object'] = tk.Frame(self.frame, width=self.WIDTH, bg=self.FG)
+                    element['object'] = tk.Frame(self.frame, width=self.WIDTH, bg=self.BG)
                 case 'label':
                     element['object'] = tk.Label(self.frame, text=element['text'], width=self.WIDTH, bg=self.BG, fg=self.FG)
                 case 'xlabel':
@@ -96,7 +103,8 @@ class Dialog():
                     element['object']["columns"] = element['values']
                     for column in element['values']:
                         element['object'].heading(column, text=column)
-                    
+                    element['object'].bind("<KeyRelease>", lambda key, id=element['id']: self.on_event_key(key, id))
+                    element['object'].bind("<Double-1>", lambda event_data, id=element['id']:self.on_event_click(id))
                     fill=tk.BOTH
                     expand = True
                 case 'header':
@@ -124,7 +132,7 @@ class Dialog():
                         self.tabbar = tk.Frame(self.root, bg=self.BG)
                         self.tabbar.pack(side=tk.LEFT, anchor='n', fill='x')
 
-                    button = tk.Button(self.tabbar, text=element['text'], font=self.BIGFONT, command=lambda id=int(element['values'][0]):self.on_toolbar_click(id), bg=self.BG3, fg=self.FG, relief="flat", bd=0, cursor='hand2')
+                    button = tk.Button(self.tabbar, text=element['text'], font=self.BIGFONT, command=lambda id=int(element['values'][0]):self.on_tabbar_click(id), bg=self.BG3, fg=self.FG, relief="flat", bd=0, cursor='hand2')
                     button.pack(side=tk.TOP, anchor='w',)
                     button.bind("<Enter>", self.on_enter) 
                     button.bind("<Leave>", self.on_leave)
@@ -138,19 +146,19 @@ class Dialog():
                     self.notebook.add(self.frame, text='qwe')#, state='hidden')
 
                 case 'toolbar':
-                    print(element)
                     if self.toolbar == None:
                         #element['object'] = tk.Frame(self.root, bg=self.FG, width=self.WIDTH)
                         element['object'] = tk.Frame(self.frame, width=self.WIDTH, bg=self.BG)
                         side = tk.TOP
-                        print(element)
                     
+                        button_id = 0
                         for value in element['values']:
-                            button = tk.Button(element['object'], text=value.strip(), width=self.WIDTH//(len(element['values'])), font=self.FONT, command=lambda id=0:print(id), bg=self.BG3, fg=self.FG, relief="flat", bd=0, cursor='hand2')
+                            button = tk.Button(element['object'], text=value.strip(), width=self.WIDTH//(len(element['values'])), font=self.FONT, command=lambda id=element['id'], button_id=button_id:self.on_toolbar_click(id, button_id), bg=self.BG3, fg=self.FG, relief="flat", bd=0, cursor='hand2')
                             button.bind("<Enter>", self.on_enter) 
                             button.bind("<Leave>", self.on_leave)
                             button.pack(side=tk.LEFT, anchor='w', padx=10)
                             #print(value)
+                            button_id += 1
 
                 case _:
                     pass
@@ -176,12 +184,12 @@ class Dialog():
     def on_event_click(self, id):
         self.event_listener('click', id, None)
     
-    def on_toolbar_click(self, id):
+    def on_tabbar_click(self, id):
         self.set_active_tab(id)
 
     def on_event_key(self, event, id):
         element = self.get_element_by_id(id)
-        element['text'] = element['object'].get()
+        #element['text'] = element['object'].get()
         self.event_listener('key', id, event)
 
     def set_event_listener(self, listener):
@@ -190,6 +198,7 @@ class Dialog():
     def get_text_by_id(self, id):
         element = self.get_element_by_id(id)
         element['text'] = element['object'].get()
+
         return element['text']
     
     def set_text_by_id(self, id, text):
@@ -209,7 +218,7 @@ class Dialog():
 
     def run(self):
         self.event_listener('init', 0, 0)
-        self.root.mainloop()
+        self.root.wait_window()
 
     def on_enter(self, event):
         event.widget.config(bg=self.BG2)
@@ -231,6 +240,7 @@ class Dialog():
 
     def on_closing(self):
         if self.event_listener('close', 0, 0):
+            self.root.grab_release() 
             self.root.destroy()
 
     def on_item_selected(self, event, id):
@@ -245,9 +255,20 @@ class Dialog():
     
     def get_item_selected(self, id):
         element = self.get_element_by_id(id)
+        item = None
         try:
             selected = element['object'].selection()[0]
             item = element['object'].item(selected, 'values')
         except:
             pass
         return item
+    
+    def on_toolbar_click(self, id, button_id):
+        self.event_listener('click', id, button_id)
+
+    def close_window(self):
+        self.root.destroy()
+
+    def set_focus_by_id(self, id):
+        element = self.get_element_by_id(id)
+        element['object'].focus()

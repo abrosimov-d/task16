@@ -1,6 +1,6 @@
-from fmdialog import FileManagerDialog
+from application import Application
 
 def main():
-    fm = FileManagerDialog()
+    app = Application()
 
 main()
